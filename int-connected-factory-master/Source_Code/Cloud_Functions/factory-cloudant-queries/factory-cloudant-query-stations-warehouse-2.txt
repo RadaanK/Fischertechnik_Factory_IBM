@@ -1,0 +1,119 @@
+/*
+* This function makes a query to identify the last production step executed at the output warehouse (warehouse 2)
+* The information is stored in the data files as a number. The infomation is decoded and then send back to the
+* Watson Assistant
+*/
+
+// Package for Cloudant Database
+const Cloudant = require("@cloudant/cloudant");
+
+// Credendials for Cloudant Database
+const user = "e21c54a4-4228-49d2-8f74-7e9422ae4f18-bluemix";
+const password = "86fa5e7388e52dab849ef5517f1ee986b8e048ae8781e44ea303fb6861c13759";
+
+// Database Name (Example: iotp_7k0aag_default_2019-07-31)
+const database = "iotp_6feat5_events_" + new Date().toISOString().substring(0,10);
+
+// Database Query
+const query = {
+   "selector": {
+      "deviceId": {
+         "$eq": "WarehouseMunich_2"
+      },
+      "data.data": {
+          "$gt": 10,
+         "$lt": 35
+      }
+   },
+   "fields": [
+      "_id",
+      "_rev",
+      "timestamp",
+      "deviceId",
+      "data"
+   ],
+   "sort": [
+      {
+         "timestamp": "desc"
+      }
+   ]
+};
+
+function main() {
+  return new Promise((resolve, reject) => {
+    const client = Cloudant({account: user, password: password});
+    if (client) {
+        try {
+            const register = client.db.use(database);
+            register.find(query, (err, data) => {
+                if(err) {
+                    reject("Error getting data");
+                } else if("docs" in data && data.docs.length > 0) {
+                    switch (data.docs[0].data.data) {
+                      case 11:
+                        resolve({"station": "started storing"});
+                      case 12:
+                          resolve({"station": "finished storing"});
+                      case 13:
+                        resolve({"station": "started moving in x-direction"});
+                      case 14:
+                        resolve({"station": "finished moving in x-direction"});
+                      case 15:
+                        resolve({"station": "started moving in y-direction"});
+                      case 16:
+                        resolve({"station": "finished moving in x-direction"});
+                      case 17:
+                        resolve({"station": "started moving in z-direction"});
+                      case 18:
+                        resolve({"station": "finished moving in z-direction"});
+                      case 19:
+                        resolve({"station": "started moving in y-direction"});
+                      case 20:
+                        resolve({"station": "finished moving in x-direction"});
+
+                      case 21:
+                        resolve({"station": "started picking-up at shelf"});
+                      case 22:
+                          resolve({"station": "finished picking up at shelf"});
+                      case 23:
+                        resolve({"station": "started picking-up at conveyor"});
+                      case 24:
+                        resolve({"station": "finished picking-up at conveyor"});
+                      case 25:
+                        resolve({"station": "started putting-down at shelf"});
+                      case 26:
+                        resolve({"station": "finished putting down at shelf"});
+                      case 27:
+                        resolve({"station": "started putting-down at conveyor"});
+                      case 28:
+                        resolve({"station": "finished putting-down at conveyor"});
+                      case 29:
+                        resolve({"station": "started outputting palette at conveyor"});
+                      case 30:
+                        resolve({"station": "finished outputting palette at conveyor"});
+                        
+                      case 31:
+                        resolve({"station": "started moving-in palette at conveyor"});
+                      case 32:
+                          resolve({"station": "finished moving-in palette at conveyor"});
+                      case 33:
+                        resolve({"station": "started outputting a workpiece"});
+                      case 34:
+                        resolve({"station": "finished outputting a workpiece"});
+                        
+                      default:
+                        reject("Something went wrong detecting the station.");
+                    }
+                } else {
+                    reject("Error: No data available!");
+                }
+            });
+        } catch (err) {
+            reject("Error during get data: " + err);
+        }
+    } else {
+        reject("Error: Could not connect to database.");
+    }
+})
+}
+exports.main = main;

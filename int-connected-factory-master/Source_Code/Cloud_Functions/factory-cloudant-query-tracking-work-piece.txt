@@ -1,0 +1,60 @@
+// Package for Cloudant Database
+const Cloudant = require("@cloudant/cloudant");
+
+// Credendials for Cloudant Database
+const user = "5362d954-43d6-4940-aa63-04f736c4f3a5-bluemix";
+const password = "45e4e8c307b5b2674b4205a6f9a4f03d798c31f04599d65044881eb25b500432";
+
+// Database Name (Example: iotp_7k0aag_default_2019-07-31)
+const database = "iotp_7k0aag_default_" + new Date().toISOString().substring(0,10);
+
+function main(params) {
+  return new Promise((resolve, reject) => {
+    const client = Cloudant({account: user, password: password});
+    if (client) {
+        try {
+            const register = client.db.use(database);
+            // Database Query
+            const query = {
+               "selector": {
+                  "data.NFC_ID": {
+                     "$eq": params.nfc_id
+                  }
+               },
+               "sort": [
+                  {
+                     "timestamp": "desc"
+                  }
+               ]
+            };
+            register.find(query, (err, data) => {
+                if(err) {
+                    reject("Error getting data");
+                } else if("docs" in data && data.docs.length > 0) {
+                switch (data.docs[0].deviceId) {
+                      case "Processing_Station_Munich":
+                          resolve({"position" : "processing station"});
+                          break;
+                      case "Sorting_Line_Munich":
+                          resolve({"position": "sorting line"});
+                          break;
+                      case "WarehouseMunich":
+                          resolve({"position": "warehouse"});
+                          break;
+                      default:
+                        reject("Something went wrong detecting the last activity.");
+                    }
+                } else {
+                    reject("Error: No data available!");
+                }
+            });
+        } catch (err) {
+            reject("Error during get data: " + err);
+        }
+    } else {
+        reject("Error: Could not connect to database.");
+    }
+})
+}
+exports.main = main;
+

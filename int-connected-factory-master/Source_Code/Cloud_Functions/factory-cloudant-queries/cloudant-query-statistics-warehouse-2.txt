@@ -1,0 +1,65 @@
+/*
+* This function makes a query in the cloudant database which is conncted to the IBM IoT platform.
+* To be exact, the informations stored by the output warehouse (warehouse 2) are queried. 
+* The function counts how often a workpiece has today been stored by the warehouse 2
+*/
+
+// Package for Cloudant Database
+const Cloudant = require("@cloudant/cloudant");
+
+// Credendials for Cloudant Database
+const user = "e21c54a4-4228-49d2-8f74-7e9422ae4f18-bluemix";
+const password = "86fa5e7388e52dab849ef5517f1ee986b8e048ae8781e44ea303fb6861c13759";
+
+// Database Name (Example: iotp_7k0aag_default_2019-07-31)
+const database = "iotp_6feat5_events_" + new Date().toISOString().substring(0,10);
+
+// Database Query
+const query = {
+    "selector": {
+       "deviceId": {
+          "$eq": "WarehouseMunich_2"
+       },
+      "data.data": {
+          "$eq": 31,
+      }
+    },
+    "fields": [
+       "_id",
+       "_rev",
+       "timestamp",
+       "deviceId",
+       "data"
+    ],
+    "sort": [
+       {
+          "timestamp": "desc"
+       }
+    ]
+ };
+
+function main() {
+  return new Promise((resolve, reject) => {
+    const client = Cloudant({account: user, password: password});
+    if (client) {
+        try {
+            const register = client.db.use(database);
+            register.find(query, (err, data) => {
+                if(err) {
+                    reject("Error getting data");
+                } else if("docs" in data && data.docs.length > 0) {
+                resolve({ "count": data.docs.length});
+                } else {
+                    reject("Error: No data available!");
+                }
+            });
+        } catch (err) {
+            reject("Error during get data: " + err);
+        }
+    } else {
+        reject("Error: Could not connect to database.");
+    }
+})
+}
+exports.main = main;
+

@@ -1,0 +1,79 @@
+/*
+* This function is currently not in use
+*/
+
+// Package for Cloudant Database
+const Cloudant = require("@cloudant/cloudant");
+
+// Credendials for Cloudant Database
+const user = "5362d954-43d6-4940-aa63-04f736c4f3a5-bluemix";
+const password = "45e4e8c307b5b2674b4205a6f9a4f03d798c31f04599d65044881eb25b500432";
+
+// Database Name (Example: iotp_7k0aag_default_2019-07-31)
+const database = "iotp_7k0aag_default_" + new Date().toISOString().substring(0,10);
+
+// Database Query
+const query = {
+   "selector": {
+      "deviceId": {
+         "$eq": "PlantMunich"
+      },
+      "data.data": {
+         "$gt": 0,
+         "$lt": 6
+      }
+   },
+   "fields": [
+      "_id",
+      "_rev",
+      "timestamp",
+      "deviceId",
+      "data"
+   ],
+   "sort": [
+      {
+         "timestamp": "desc"
+      }
+   ]
+};
+
+function main() {
+  return new Promise((resolve, reject) => {
+    const client = Cloudant({account: user, password: password});
+    if (client) {
+        try {
+            const register = client.db.use(database);
+            register.find(query, (err, data) => {
+                if(err) {
+                    reject("Error getting data");
+                } else if("docs" in data && data.docs.length > 0) {
+                    switch (data.docs[0].data.data) {
+                      case 1:
+                        resolve({"station": "was stored"});
+                        break;
+                      case 2:
+                          resolve({"station": "waited"});
+                      case 3:
+                        resolve({"station": "got processed"});
+                        break;
+                      case 4:
+                        resolve({"station": "started a reference run"});
+                      case 5:
+                          resolve({"station": "finished a reference run"})
+                          break;
+                      default: 
+                        reject("Something went wrong detecting the station.");
+                    }
+                } else {
+                    reject("Error: No data available!");
+                }
+            });
+        } catch (err) {
+            reject("Error during get data: " + err);
+        }
+    } else {
+        reject("Error: Could not connect to database.");
+    }
+})
+}
+exports.main = main;

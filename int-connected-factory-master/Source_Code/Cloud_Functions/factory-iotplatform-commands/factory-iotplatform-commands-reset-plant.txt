@@ -1,0 +1,51 @@
+/*
+* This function sends a command to the IBM IoT platform
+* When sending the command, the values stored at the Node-Red instance (in the cloud) are reset.
+* So the plant can be set to its original state for a new start or after an problem has occured
+*/
+
+const rp = require("request-promise");
+// Device Type to publish command with
+const deviceType = "watsonassistant";
+// Device ID to publish command with
+const deviceId = "nodered";
+// Type of the command
+const commandType = "reset";
+// Payload sent with the command
+const payload = {"command": 1 };
+
+
+function main() {
+  return new Promise((resolve, reject) => {
+        concatUrl(deviceType, deviceId, payload, commandType)
+                    .then(iotOptions => {
+                        console.log(iotOptions);
+                        rp(iotOptions)
+                            .then(success => resolve({"status": "Successfully published device command."}))
+                            .catch(err => reject(err))
+                    })
+    })
+};
+
+function concatUrl(deviceType, deviceId, payload, comm) {
+    return new Promise((resolve, reject) => {
+        let options = {
+            method: "POST",
+            json: true,
+            body: payload,
+            headers: {
+                "content-type": "application/json",
+                authorization: 'Basic YS02ZmVhdDUtemVpZHhyaWMwZzp0X0VTQFJNNk1sM0hhTEtiKHk='
+                // for generating the authorisation use https://www.blitter.se/utils/basic-authentication-header-generator/
+                // Use an API Key as Username and token as password
+            }
+        }
+        let type = `/types/${deviceType}`;
+        let id = `/devices/${deviceId}`;
+        let command = `/commands/${comm}`
+        let iotUrl = "https://6feat5.messaging.internetofthings.ibmcloud.com:8883/api/v0002/application";
+
+        options.url = iotUrl.concat(type, id, command);
+        resolve(options)
+    })
+};

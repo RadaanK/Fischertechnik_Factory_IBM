@@ -1,0 +1,103 @@
+/*
+* This function makes a query in the cloudant database which is conncted to the IBM IoT platform.
+* To be exact, the information send by the input warehouse (warehouse 1) are queried.
+* The last stored NFC If which is unequal to 0 is responded when the function is called
+*/
+
+// Package for Cloudant Database
+const Cloudant = require("@cloudant/cloudant");
+
+// Credendials for Cloudant Database
+const user = "e21c54a4-4228-49d2-8f74-7e9422ae4f18-bluemix";
+const password = "86fa5e7388e52dab849ef5517f1ee986b8e048ae8781e44ea303fb6861c13759";
+
+// Database Name (Example: iotp_7k0aag_default_2019-07-31)
+const database = "iotp_6feat5_events_" + new Date().toISOString().substring(0,10);
+
+// Database Query
+const query = {
+    "selector": {
+       "deviceId": {
+          "$eq": "WarehouseMunich_1"
+       },
+       "data.NFC_ID": {
+           "$ne": 0
+       }
+    },
+    "fields": [
+       "_id",
+       "_rev",
+       "timestamp",
+       "deviceId",
+       "data"
+    ],
+    "sort": [
+       {
+          "timestamp": "desc"
+       }
+    ]
+ };
+
+function main() {
+  return new Promise((resolve, reject) => {
+    const client = Cloudant({account: user, password: password});
+    if (client) {
+        try {
+            const register = client.db.use(database);
+            register.find(query, (err, data) => {
+                if(err) {
+                    reject("Error getting data");
+                } else if("docs" in data && data.docs.length > 0) {
+                 switch (data.docs[0].data.NFC_ID) {
+                      case "045cc74a616081":
+                          resolve({"piece": "white (number 1, NFC ID '045cc74a616081')"});
+                          break;
+                      case "0416c64a616081":
+                          resolve({"piece": "white (number 2, NFC ID '0416c64a616081')"});
+                          break;
+                      case "0417c64a616081":
+                          resolve({"piece": "white (number 3, NFC ID '0417c64a616081')"});
+                          break;
+                      case "0452c64a616081":
+                          resolve({"piece": "white (number 4, NFC ID '0452c64a616081')"});
+                          break;
+                      case "0434c64a616081":
+                          resolve({"piece": "red (number 1, NFC ID '0434c64a616081')"});
+                          break;
+                      case "04f8c64a616080":
+                          resolve({"piece": "red (number 2, NFC ID '04f8c64a616080')"});
+                          break;
+                      case "047ac74a616081":
+                          resolve({"piece": "red (number 3, NFC ID '047ac74a616081')"});
+                          break;
+                      case "044ac74a616080":
+                          resolve({"piece": "red (number 4, NFC ID '044ac74a616080')"});
+                          break;
+                      case "041ec74a616081":
+                          resolve({"piece": "blue (number 1, NFC ID '041ec74a616081')"});
+                          break;
+                      case "045bc74a616081":
+                          resolve({"piece": "blue (number 2, NFC ID '045bc74a616081')"});
+                          break;
+                      case "043cc74a616081":
+                          resolve({"piece": "blue (number 3, NFC ID '043cc74a616081')"});
+                          break;
+                      case "0467c74a616080":
+                          resolve({"piece": "blue (number 4, NFC ID '0467c74a616080')"});
+                          break;
+                      default:
+                        reject("Something went wrong detecting the last activity.");
+                    }
+                } else {
+                    reject("Error: No data available for today!");
+                }
+            });
+        } catch (err) {
+            reject("Error during get data: " + err);
+        }
+    } else {
+        reject("Error: Could not connect to database.");
+    }
+})
+}
+exports.main = main;

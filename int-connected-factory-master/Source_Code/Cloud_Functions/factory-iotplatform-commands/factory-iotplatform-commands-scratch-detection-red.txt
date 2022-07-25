@@ -1,0 +1,49 @@
+/*
+* Function currently not in use
+*/
+
+const rp = require("request-promise");
+// Device Type to publish command with
+const deviceType = "watsonassistant";
+// Device ID to publish command with
+const deviceId = "warehouse";
+// Type of the command
+const commandType = 104;
+// Payload sent with the command
+const payload = {"color": 9 };
+
+
+function main() {
+  return new Promise((resolve, reject) => {
+        concatUrl(deviceType, deviceId, payload, commandType)
+                    .then(iotOptions => {
+                        console.log(iotOptions);
+                        rp(iotOptions)
+                            .then(success => resolve({"status": "Successfully published device command."}))
+                            .catch(err => reject(err))
+                    })
+    })
+};
+
+function concatUrl(deviceType, deviceId, payload, comm) {
+    return new Promise((resolve, reject) => {
+        let options = {
+            method: "POST",
+            json: true,
+            body: payload,
+            headers: {
+                "content-type": "application/json",
+                authorization: 'Basic YS05YnJ5d3EtZ3h2aHZnaWE5dTpZQkRzYnQ0c1ZObWlZekdFNHQ='
+                // for generating the authorisation use https://www.blitter.se/utils/basic-authentication-header-generator/
+                // Use an API Key as Username and token as password
+            }
+        }
+        let type = `/types/${deviceType}`;
+        let id = `/devices/${deviceId}`;
+        let command = `/commands/${comm}`
+        let iotUrl = "https://9brywq.messaging.internetofthings.ibmcloud.com:8883/api/v0002/application";
+
+        options.url = iotUrl.concat(type, id, command);
+        resolve(options)
+    })
+};

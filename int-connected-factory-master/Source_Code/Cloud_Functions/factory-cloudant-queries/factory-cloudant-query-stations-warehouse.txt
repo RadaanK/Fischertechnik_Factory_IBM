@@ -1,0 +1,83 @@
+/*
+* This function is not in use anymore. It served as template for the two functions factory-cloudant-query-stations-warehouse-1 and
+* factory-cloudant-query-stations-warehouse-2. It is only held back for backup.
+*/
+
+
+// Package for Cloudant Database
+const Cloudant = require("@cloudant/cloudant");
+
+// Credendials for Cloudant Database
+const user = "5362d954-43d6-4940-aa63-04f736c4f3a5-bluemix";
+const password = "45e4e8c307b5b2674b4205a6f9a4f03d798c31f04599d65044881eb25b500432";
+
+// Database Name (Example: iotp_7k0aag_default_2019-07-31)
+const database = "iotp_7k0aag_default_" + new Date().toISOString().substring(0,10);
+
+// Database Query
+const query = {
+   "selector": {
+      "deviceId": {
+         "$eq": "WarehouseMunich"
+      },
+      "data.data": {
+          "$gt": 10,
+         "$lt": 30
+      }
+   },
+   "fields": [
+      "_id",
+      "_rev",
+      "timestamp",
+      "deviceId",
+      "data"
+   ],
+   "sort": [
+      {
+         "timestamp": "desc"
+      }
+   ]
+};
+
+function main() {
+  return new Promise((resolve, reject) => {
+    const client = Cloudant({account: user, password: password});
+    if (client) {
+        try {
+            const register = client.db.use(database);
+            register.find(query, (err, data) => {
+                if(err) {
+                    reject("Error getting data");
+                } else if("docs" in data && data.docs.length > 0) {
+                    switch (data.docs[0].data.data) {
+                      case 10:
+                        resolve({"station": "white piece was stored"});
+                        break;
+                      case 11:
+                          resolve({"station": "red piece was stored"});
+                      case 12:
+                        resolve({"station": "blue piece was stored"});
+                        break;
+                      case 21:
+                        resolve({"station": "white piece was delivered"});
+                      case 22:
+                          resolve({"station": "red piece was delivered"})
+                          break;
+                      case 23:
+                          resolve({"station": "blue piece was delivered"});
+                      default:
+                        reject("Something went wrong detecting the station.");
+                    }
+                } else {
+                    reject("Error: No data available!");
+                }
+            });
+        } catch (err) {
+            reject("Error during get data: " + err);
+        }
+    } else {
+        reject("Error: Could not connect to database.");
+    }
+})
+}
+exports.main = main;

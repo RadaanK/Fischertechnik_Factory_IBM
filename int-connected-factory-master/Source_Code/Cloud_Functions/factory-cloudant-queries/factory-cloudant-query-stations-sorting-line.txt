@@ -1,0 +1,101 @@
+/*
+* This function makes a query in the cloudant database which is conncted to the IBM IoT platform.
+* To be exact, the informations stored by the sorting line are queried. 
+* The last event stored by the sorting line is queried and decoded. The final answer is then responded.
+*/
+
+// Package for Cloudant Database
+const Cloudant = require("@cloudant/cloudant");
+
+// Credendials for Cloudant Database
+const user = "e21c54a4-4228-49d2-8f74-7e9422ae4f18-bluemix";
+const password = "86fa5e7388e52dab849ef5517f1ee986b8e048ae8781e44ea303fb6861c13759";
+
+// Database Name (Example: iotp_7k0aag_default_2019-07-31)
+const database = "iotp_6feat5_events_" + new Date().toISOString().substring(0,10);
+
+// Database Query
+const query = {
+   "selector": {
+      "deviceId": {
+         "$eq": "Sorting_Line_Munich"
+      },
+      "data.data": {
+         "$gt": 0,
+         "$lt": 17
+      }
+   },
+   "fields": [
+      "_id",
+      "_rev",
+      "timestamp",
+      "deviceId",
+      "data"
+   ],
+   "sort": [
+      {
+         "timestamp": "desc"
+      }
+   ]
+};
+
+function main() {
+  return new Promise((resolve, reject) => {
+    const client = Cloudant({account: user, password: password});
+    if (client) {
+        try {
+            const register = client.db.use(database);
+            register.find(query, (err, data) => {
+                if(err) {
+                    reject("Error getting data");
+                } else if("docs" in data && data.docs.length > 0) {
+                    switch (data.docs[0].data.data) {
+                      case 1:
+                        resolve({"station": "started the conveyor"});
+                      case 2:
+                        resolve({"station": "stopped the conveyor"});
+                      case 3:
+                        resolve({"station": "started compressor"});
+                      case 4:
+                        resolve({"station": "stopped compressor"});
+                      case 6:
+                        resolve({"station": "started color detection"});
+                      case 7:
+                        resolve({"station": "completed color detection"});
+                      case 8:
+                        resolve({"station": "white workpiece has been detected"});
+                      case 9:
+                        resolve({"station": "red workpiece has been detected"});
+                      case 10:
+                        resolve({"station": "blue workpiece has been detected"});
+                        
+                      case 11:
+                        resolve({"station": "opened valve at slide 1"});
+                      case 12:
+                        resolve({"station": "closed valve at slide 1"});
+                      case 13:
+                        resolve({"station": "opened valve at slide 2"});
+                      case 14:
+                        resolve({"station": "closed valve at slide 2"});
+                      case 15:
+                        resolve({"station": "opened valve at slide 3"});
+                      case 16:
+                        resolve({"station": "closed valve at slide 3"});    
+                        
+                        
+                      default:
+                        reject("Something went wrong detecting the last activity.");
+                    }
+                } else {
+                    reject("Error: No data available!");
+                }
+            });
+        } catch (err) {
+            reject("Error during get data: " + err);
+        }
+    } else {
+        reject("Error: Could not connect to database.");
+    }
+})
+}
+exports.main = main;
